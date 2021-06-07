@@ -1,0 +1,6 @@
+name: ModelEngineSpawner
+main: com.elmakers.mine.bukkit.plugins.ModelEngineSpawner
+version: 1.0
+author: NathanWolf
+description: A plugin to test ModelEngine models
+depend: [ModelEngine]
