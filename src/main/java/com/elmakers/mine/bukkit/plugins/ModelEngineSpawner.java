@@ -1,14 +1,19 @@
 package com.elmakers.mine.bukkit.plugins;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -19,7 +24,7 @@ import com.ticxo.modelengine.api.ModelEngineAPI;
 import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.ModeledEntity;
 
-public class ModelEngineSpawner extends JavaPlugin implements CommandExecutor {
+public class ModelEngineSpawner extends JavaPlugin implements TabExecutor {
     private static final ChatColor CHAT_PREFIX = ChatColor.AQUA;
     private static final ChatColor ERROR_PREFIX = ChatColor.RED;
     private static final int MAX_RANGE = 64;
@@ -29,6 +34,7 @@ public class ModelEngineSpawner extends JavaPlugin implements CommandExecutor {
         PluginCommand command = getCommand("spawnmodel");
         if (command != null){
             command.setExecutor(this);
+            command.setTabCompleter(this);
         }
     }
 
@@ -59,6 +65,7 @@ public class ModelEngineSpawner extends JavaPlugin implements CommandExecutor {
             sendError(sender, "You must be looking at a block");
             return true;
         }
+        block = block.getRelative(BlockFace.UP);
         Entity mob = block.getWorld().spawnEntity(block.getLocation(), entityType);
         if (!mob.isValid()) {
             sendError(sender, "Failed to spawn mob of type: " + ChatColor.WHITE + entityType);
@@ -81,6 +88,39 @@ public class ModelEngineSpawner extends JavaPlugin implements CommandExecutor {
         modeledEntity.setInvisible(true);
 
         return true;
+    }
+
+    public List<String> onTabComplete(String command, String[] args) {
+        List<String> options = new ArrayList<>();
+        if (command.equals("spawnmodel")) {
+            if (args.length == 1) {
+                Collection<String> models = ModelEngineAPI.api.getModelManager().getModelRegistry().getRegisteredModel().keySet();
+                options.addAll(models);
+            } else if (args.length == 2) {
+                for (EntityType entityType : EntityType.values()) {
+                    options.add(entityType.name().toLowerCase());
+                }
+            }
+        }
+        return options;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        String completeCommand = args.length > 0 ? args[args.length - 1] : "";
+
+        completeCommand = completeCommand.toLowerCase();
+        Collection<String> allOptions = onTabComplete(command.getName(), args);
+        List<String> options = new ArrayList<>();
+        for (String option : allOptions) {
+            String lowercase = option.toLowerCase();
+            if (lowercase.startsWith(completeCommand)) {
+                options.add(option);
+            }
+        }
+        Collections.sort(options);
+
+        return options;
     }
 
     protected void sendMessage(CommandSender sender, String string) {
